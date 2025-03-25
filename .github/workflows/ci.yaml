@@ -1,7 +1,7 @@
 name: React Frontend CI/CD Pipeline
 
 # This workflow handles the CI/CD process for the React frontend
-# It builds, tests, and deploys the React application to S3
+# It builds, tests, and deploys the React application to AWS Amplify
 
 # Trigger on push to main branch or pull requests
 on:
@@ -15,9 +15,9 @@ on:
 # Environment variables
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }} # Change to your preferred region
-  S3_BUCKET: react-app-bucket-raj3 # Change to your bucket name
+  AMPLIFY_APP_ID: ${{ secrets.AMPLIFY_APP_ID }} # Your Amplify app ID
+  AMPLIFY_BRANCH: main # The branch to deploy to in Amplify
   SKIP_PREFLIGHT_CHECK: true # Skip Create React App dependency checks
-  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
 # Permissions for OIDC authentication
 permissions:
@@ -63,8 +63,14 @@ jobs:
           role-session-name: react-app-session
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Sync build folder to S3
-      - name: Deploy to S3
+      # Deploy to AWS Amplify
+      - name: Deploy to AWS Amplify
         run: |
-          aws s3 sync --delete ./build/ s3://${{ env.S3_BUCKET }}
-  
+          # Create zip file of the build directory
+          cd build && zip -r ../build.zip .
+          
+          # Start the deployment job
+          aws amplify start-deployment \
+            --app-id ${{ env.AMPLIFY_APP_ID }} \
+            --branch-name ${{ env.AMPLIFY_BRANCH }} \
+            --source-url fileb://../build.zip
