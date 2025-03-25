@@ -66,11 +66,25 @@ jobs:
       # Deploy to AWS Amplify
       - name: Deploy to AWS Amplify
         run: |
-          # Create zip file of the build directory
-          cd build && zip -r ../build.zip .
+          # Install the AWS Amplify CLI
+          npm install -g @aws-amplify/cli
           
-          # Start the deployment job
-          aws amplify start-deployment \
+          # Create the amplify.yml file for deployment
+          cat > amplify.yml << EOF
+          version: 1
+          frontend:
+            phases:
+              build:
+                commands:
+                  - echo "Build already completed in previous step"
+            artifacts:
+              baseDirectory: build
+              files:
+                - '**/*'
+          EOF
+          
+          # Use AWS CLI to create a deployment
+          aws amplify start-job \
             --app-id ${{ env.AMPLIFY_APP_ID }} \
             --branch-name ${{ env.AMPLIFY_BRANCH }} \
-            --source-url fileb://../build.zip
+            --job-type RELEASE
